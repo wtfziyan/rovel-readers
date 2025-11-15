@@ -1,0 +1,127 @@
+[
+  {
+    "_id": "guest-d75e6525-8d30-4ece-b959-8272e76695a6",
+    "name": "Guest User",
+    "email": "guest-d75e6525-8d30-4ece-b959-8272e76695a6@rovel.com",
+    "password": "",
+    "role": "guest",
+    "deviceId": "device-1763139746891-2fmimw8b7",
+    "createdAt": "2025-11-14T17:02:26.913Z",
+    "lastSeen": "2025-11-15T05:37:33.209Z",
+    "readHistory": [
+      {
+        "manga": "the-last-mage-king",
+        "chapterId": "1",
+        "viewedAt": "2025-11-15T05:37:33.209Z"
+      },
+      {
+        "manga": "cyber-shinobi",
+        "chapterId": "1",
+        "viewedAt": "2025-11-15T05:17:51.235Z"
+      },
+      {
+        "manga": "dragon-warrior",
+        "chapterId": "2",
+        "viewedAt": "2025-11-14T18:23:14.299Z"
+      },
+      {
+        "manga": "dragon-warrior",
+        "chapterId": "1",
+        "viewedAt": "2025-11-14T17:07:36.074Z"
+      }
+    ],
+    "likedGenres": [],
+    "unlockedChapters": [
+      {
+        "manga": "cyber-shinobi",
+        "chapterId": "1",
+        "unlockedAt": "2025-11-15T05:17:50.088Z",
+        "expiresAt": "2025-11-15T05:47:50.088Z"
+      },
+      {
+        "manga": "the-last-mage-king",
+        "chapterId": "1",
+        "unlockedAt": "2025-11-15T05:24:33.465Z",
+        "expiresAt": "2025-11-15T05:54:33.464Z"
+      }
+    ],
+    "likes": [
+      1,
+      4
+    ],
+    "readLater": [
+      1
+    ],
+    "viewedChapters": [],
+    "searchHistory": [
+      "cyb"
+    ],
+    "continueReading": {
+      "manga": "the-last-mage-king",
+      "chapterId": "1",
+      "lastRead": "2025-11-15T05:37:33.077Z"
+    }
+  },
+  {
+    "_id": "admin-auto",
+    "name": "Admin",
+    "email": "wtfziyan@gmail.com",
+    "password": "$2a$12$Qb4qXws77z70yz.4EkSgyuNRdrTg3zNFh0Nxk3yoQ4WGFjy7iGO5.",
+    "role": "admin",
+    "createdAt": "2025-11-14T17:01:31.926Z",
+    "lastSeen": "2025-11-14T17:04:11.996Z"
+  },
+  {
+    "_id": "guest-123456789",
+    "name": "Guest-12345678",
+    "deviceId": "123456789",
+    "role": "guest",
+    "createdAt": "2024-01-28T10:00:00Z",
+    "lastSeen": "2024-01-28T14:35:00Z",
+    "readHistory": [],
+    "likedGenres": [],
+    "unlockedChapters": [],
+    "continueReading": null,
+    "likes": [],
+    "readLater": [],
+    "viewedChapters": []
+  },
+  {
+    "_id": "user-1",
+    "name": "Demo User",
+    "email": "demo@rovel.com",
+    "password": "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj89ZKVYlSKi",
+    "role": "user",
+    "createdAt": "2024-01-01T10:00:00Z",
+    "lastSeen": "2024-01-28T14:30:00Z",
+    "readHistory": [
+      {
+        "manga": "dragon-warrior",
+        "chapterId": "1",
+        "viewedAt": "2024-01-28T14:25:00Z"
+      }
+    ],
+    "likedGenres": [
+      "Action",
+      "Fantasy",
+      "Adventure"
+    ],
+    "unlockedChapters": [],
+    "continueReading": {
+      "manga": "dragon-warrior",
+      "chapterId": "1",
+      "lastRead": "2024-01-28T14:25:00Z"
+    },
+    "likes": [
+      1,
+      5
+    ],
+    "readLater": [
+      2,
+      6
+    ],
+    "viewedChapters": [
+      "dragon-warrior-1"
+    ]
+  }
+]

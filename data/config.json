@@ -1,0 +1,6 @@
+{
+  "unlockDuration": 40,
+  "validityDuration": 30,
+  "defaultUnlockTime": 40,
+  "unlockExpiryMinutes": 30
+}

@@ -1,0 +1,374 @@
+{
+  "guest-d75e6525-8d30-4ece-b959-8272e76695a6": {
+    "userId": "guest-d75e6525-8d30-4ece-b959-8272e76695a6",
+    "activities": [
+      {
+        "type": "search",
+        "data": {
+          "query": "cyb"
+        },
+        "timestamp": "2025-11-14T17:02:42.539Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:03:42.744Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:03:42.771Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:03:42.848Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:05:52.157Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:05:52.190Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:05:52.337Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:03.226Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:03.256Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:03.412Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:05.696Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:05.776Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:06.032Z"
+      },
+      {
+        "type": "readLater",
+        "data": {
+          "postId": 1,
+          "added": true
+        },
+        "timestamp": "2025-11-14T17:06:09.376Z"
+      },
+      {
+        "type": "like",
+        "data": {
+          "postId": 1,
+          "liked": true
+        },
+        "timestamp": "2025-11-14T17:06:09.861Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:27.774Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:27.807Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:06:27.976Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:07:33.175Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:07:33.203Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:07:33.226Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:07:35.771Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:07:35.859Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-14T17:07:36.075Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T17:08:21.086Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T17:08:21.270Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T17:08:21.305Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T17:52:16.057Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T17:52:16.089Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T17:52:16.100Z"
+      },
+      {
+        "type": "like",
+        "data": {
+          "postId": 4,
+          "liked": true
+        },
+        "timestamp": "2025-11-14T18:19:30.759Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T18:23:14.227Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T18:23:14.254Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "dragon-warrior",
+          "chapterId": "2"
+        },
+        "timestamp": "2025-11-14T18:23:14.300Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "cyber-shinobi",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:17:51.191Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "cyber-shinobi",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:17:51.224Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "cyber-shinobi",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:17:51.236Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:24:35.194Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:24:35.204Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:24:35.215Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:35:20.073Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:35:20.085Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:35:20.100Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:37:33.013Z"
+      },
+      {
+        "type": "continueReading",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:37:33.083Z"
+      },
+      {
+        "type": "chapterView",
+        "data": {
+          "manga": "the-last-mage-king",
+          "chapterId": "1"
+        },
+        "timestamp": "2025-11-15T05:37:33.214Z"
+      }
+    ]
+  }
+}
