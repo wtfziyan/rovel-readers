@@ -56,57 +56,31 @@ let userActivityData = {};
 let client;
 let db;
 
-async function connectToMongoDB() {
+async function loadData() {
   try {
-    client = new MongoClient(MONGODB_URI, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
+    if (!db) {
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.log('⚠️  Using in-memory data storage due to MongoDB connection failure');
+        return;
       }
-    });
-    
-    await client.connect();
-    db = client.db("Rovels");
-    
-    // Test the connection
-    await client.db("admin").command({ ping: 1 });
-    console.log('✅ Connected to MongoDB Atlas successfully');
-    return true;
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    return false;
-  }
-}
+    }
 
-    const [
-      mangaCollection,
-      novelsCollection,
-      chaptersCollection,
-      usersCollection,
-      adsConfigCollection,
-      unlocksCollection,
-      viewsCollection,
-      configCollection,
-      rankCollection,
-      searchCollection,
-      analyticsCollection,
-      userActivityCollection
-    ] = await Promise.all([
-      db.collection('manga').find({}).toArray(),
-      db.collection('novels').find({}).toArray(),
-      db.collection('chapters').find({}).toArray(),
-      db.collection('users').find({}).toArray(),
-      db.collection('ads-config').findOne({}),
-      db.collection('unlocks').findOne({}),
-      db.collection('views').findOne({}),
-      db.collection('config').findOne({}),
-      db.collection('rank').findOne({}),
-      db.collection('search').findOne({}),
-      db.collection('analytics').findOne({}),
-      db.collection('user-activity').findOne({})
-    ]);
+    // ✅ Simple approach - alag alag await use karo
+    const mangaCollection = await db.collection('manga').find({}).toArray();
+    const novelsCollection = await db.collection('novels').find({}).toArray();
+    const chaptersCollection = await db.collection('chapters').find({}).toArray();
+    const usersCollection = await db.collection('users').find({}).toArray();
+    const adsConfigCollection = await db.collection('ads-config').findOne({});
+    const unlocksCollection = await db.collection('unlocks').findOne({});
+    const viewsCollection = await db.collection('views').findOne({});
+    const configCollection = await db.collection('config').findOne({});
+    const rankCollection = await db.collection('rank').findOne({});
+    const searchCollection = await db.collection('search').findOne({});
+    const analyticsCollection = await db.collection('analytics').findOne({});
+    const userActivityCollection = await db.collection('user-activity').findOne({});
 
+    // Data assign karo
     mangaData = mangaCollection || [];
     novelsData = novelsCollection || [];
     
@@ -132,7 +106,6 @@ async function connectToMongoDB() {
   } catch (error) {
     console.error(`❌ Error loading data from MongoDB:`, error);
   }
-}
 
 async function saveData(collectionName, data) {
   try {
