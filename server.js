@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'rovel-secret-key-change-in-production';
 const ADMIN_EMAIL = 'wtfziyan@gmail.com';
 const ADMIN_PASSWORD = 'xiyan12345';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://wtfziyan_db_user:ewK0I4dAtsrRDNeI@cluster0.5vavyni.mongodb.net/Rovels?retryWrites=true&w=majority&appName=Cluster0";
 
 const DATA_DIR = './data';
 const MANGA_FILE = path.join(DATA_DIR, 'manga.json');
@@ -69,23 +69,15 @@ async function connectToMongoDB() {
     await client.connect();
     db = client.db("Rovels");
     
-    console.log('✅ Connected to MongoDB successfully');
+    // Test the connection
+    await client.db("admin").command({ ping: 1 });
+    console.log('✅ Connected to MongoDB Atlas successfully');
     return true;
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     return false;
   }
 }
-
-async function loadData() {
-  try {
-    if (!db) {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.log('⚠️  Using in-memory data storage due to MongoDB connection failure');
-        return;
-      }
-    }
 
     const [
       mangaCollection,
@@ -2662,11 +2654,26 @@ app.use('/protected-images', (req, res, next) => {
 });
 
 app.get(['/admin', '/admin/*'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
+  res.json({
+    message: "Rovel Readers API Server",
+    admin: "Admin panel frontend not deployed",
+    api: "Use API endpoints at /api/*",
+    health: "Check /api/health for server status"
+  });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.json({
+    message: "🚀 Rovel Readers API Server is running!",
+    endpoints: {
+      health: "/api/health",
+      stats: "/api/stats", 
+      posts: "/api/posts",
+      manga: "/api/manga",
+      novels: "/api/novels",
+      admin: "/admin (API only)"
+    },
+    status: "Frontend not deployed - API only mode"
+  });
 });
 
 app.use((error, req, res, next) => {
