@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 const http = require('http');
 const socketIo = require('socket.io');
 const multer = require('multer');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'rovel-secret-key-change-in-production';
 const ADMIN_EMAIL = 'wtfziyan@gmail.com';
 const ADMIN_PASSWORD = 'xiyan12345';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 
 const DATA_DIR = './data';
 const MANGA_FILE = path.join(DATA_DIR, 'manga.json');
@@ -51,50 +53,138 @@ let searchData = {};
 let analyticsData = {};
 let userActivityData = {};
 
-async function loadData() {
+let client;
+let db;
+
+async function connectToMongoDB() {
   try {
-    const [manga, novels, chapters, users, adsConfig, unlocks, views, config, rank, search, analytics, userActivity] = await Promise.all([
-      fs.readFile(MANGA_FILE, 'utf8').then(JSON.parse).catch(() => []),
-      fs.readFile(NOVELS_FILE, 'utf8').then(JSON.parse).catch(() => []),
-      fs.readFile(CHAPTERS_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(USERS_FILE, 'utf8').then(JSON.parse).catch(() => []),
-      fs.readFile(ADS_CONFIG_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(UNLOCKS_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(VIEWS_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(CONFIG_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(RANK_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(SEARCH_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(ANALYTICS_FILE, 'utf8').then(JSON.parse).catch(() => ({})),
-      fs.readFile(USER_ACTIVITY_FILE, 'utf8').then(JSON.parse).catch(() => ({}))
-    ]);
-
-    mangaData = manga;  
-    novelsData = novels;  
-    chaptersData = chapters;  
-    usersData = users;  
-    adsConfigData = adsConfig;  
-    unlocksData = unlocks;  
-    viewsData = views;  
-    configData = config;  
-    rankData = rank;  
-    searchData = search;
-    analyticsData = analytics;
-    userActivityData = userActivity;
-
-    console.log(`✅ Data loaded from files successfully`);
-
+    client = new MongoClient(MONGODB_URI, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      }
+    });
+    
+    await client.connect();
+    db = client.db("Rovels");
+    
+    console.log('✅ Connected to MongoDB successfully');
+    return true;
   } catch (error) {
-    console.error(`❌ Error loading data:`, error);
+    console.error('❌ MongoDB connection error:', error);
+    return false;
   }
 }
 
-async function saveData(filePath, data) {
+async function loadData() {
   try {
-    const tempPath = filePath + '.tmp';
-    await fs.writeFile(tempPath, JSON.stringify(data, null, 2));
-    await fs.rename(tempPath, filePath);
+    if (!db) {
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.log('⚠️  Using in-memory data storage due to MongoDB connection failure');
+        return;
+      }
+    }
+
+    const [
+      mangaCollection,
+      novelsCollection,
+      chaptersCollection,
+      usersCollection,
+      adsConfigCollection,
+      unlocksCollection,
+      viewsCollection,
+      configCollection,
+      rankCollection,
+      searchCollection,
+      analyticsCollection,
+      userActivityCollection
+    ] = await Promise.all([
+      db.collection('manga').find({}).toArray(),
+      db.collection('novels').find({}).toArray(),
+      db.collection('chapters').find({}).toArray(),
+      db.collection('users').find({}).toArray(),
+      db.collection('ads-config').findOne({}),
+      db.collection('unlocks').findOne({}),
+      db.collection('views').findOne({}),
+      db.collection('config').findOne({}),
+      db.collection('rank').findOne({}),
+      db.collection('search').findOne({}),
+      db.collection('analytics').findOne({}),
+      db.collection('user-activity').findOne({})
+    ]);
+
+    mangaData = mangaCollection || [];
+    novelsData = novelsCollection || [];
+    
+    chaptersData = {};
+    if (chaptersCollection) {
+      chaptersCollection.forEach(doc => {
+        chaptersData[doc._id] = doc.chapters;
+      });
+    }
+    
+    usersData = usersCollection || [];
+    adsConfigData = adsConfigCollection || {};
+    unlocksData = unlocksCollection || {};
+    viewsData = viewsCollection || {};
+    configData = configCollection || {};
+    rankData = rankCollection || {};
+    searchData = searchCollection || {};
+    analyticsData = analyticsCollection || {};
+    userActivityData = userActivityCollection || {};
+
+    console.log(`✅ Data loaded from MongoDB successfully`);
+
   } catch (error) {
-    console.error(`❌ Error saving data to ${filePath}:`, error);
+    console.error(`❌ Error loading data from MongoDB:`, error);
+  }
+}
+
+async function saveData(collectionName, data) {
+  try {
+    if (!db) {
+      const connected = await connectToMongoDB();
+      if (!connected) return;
+    }
+
+    const collection = db.collection(collectionName);
+    
+    if (Array.isArray(data)) {
+      await collection.deleteMany({});
+      if (data.length > 0) {
+        await collection.insertMany(data);
+      }
+    } else {
+      await collection.deleteMany({});
+      await collection.insertOne(data);
+    }
+  } catch (error) {
+    console.error(`❌ Error saving data to MongoDB collection ${collectionName}:`, error);
+  }
+}
+
+async function saveChaptersData() {
+  try {
+    if (!db) {
+      const connected = await connectToMongoDB();
+      if (!connected) return;
+    }
+
+    const collection = db.collection('chapters');
+    await collection.deleteMany({});
+    
+    const chaptersArray = Object.entries(chaptersData).map(([mangaId, chapters]) => ({
+      _id: mangaId,
+      chapters: chapters
+    }));
+    
+    if (chaptersArray.length > 0) {
+      await collection.insertMany(chaptersArray);
+    }
+  } catch (error) {
+    console.error(`❌ Error saving chapters data to MongoDB:`, error);
   }
 }
 
@@ -123,11 +213,11 @@ function findChapter(manga, chapterId) {
   return chaptersData[normalizedTitle]?.[chapterId];
 }
 
-function updateUser(userId, updates) {
+async function updateUser(userId, updates) {
   const userIndex = usersData.findIndex(user => user._id === userId);
   if (userIndex !== -1) {
     usersData[userIndex] = { ...usersData[userIndex], ...updates };
-    saveData(USERS_FILE, usersData);
+    await saveData('users', usersData);
     return usersData[userIndex];
   }
   return null;
@@ -270,15 +360,12 @@ async function initializeData() {
         await fs.access(file.path);  
       } catch {  
         await fs.writeFile(file.path, file.default);  
-        console.log(`📁 Created ${file.path}`);  
       }  
     }  
     
     await loadData();  
     
     await initializeSampleData();  
-    
-    console.log(`✅ Data initialization complete`);
 
   } catch (err) {
     console.error(`❌ Error initializing data:`, err);
@@ -287,171 +374,15 @@ async function initializeData() {
 
 async function initializeSampleData() {
   try {
-    const sampleManga = [
-      {
-        "id": 1,
-        "title": "Dragon Warrior",
-        "type": "manga",
-        "cover": "https://images.unsplash.com/photo-1635805737707-575885ab0820",
-        "description": "ایک نوجوان جنگجو ڈریگن سواری کی قدیم فن میں مہارت حاصل کرنے اور اپنی بادشاہی کو تاریکی سے بچانے کے سفر پر روانہ ہوتا ہے۔",
-        "author": "Akira Yamamoto",
-        "genres": "Action, Adventure, Fantasy",
-        "rating": 4.8,
-        "chapters_count": 24,
-        "status": "Ongoing",
-        "created_at": "2024-01-15T10:00:00Z",
-        "postedAt": "2024-01-15T10:00:00Z",
-        "latest_chapter_id": "24",
-        "totalViews": 15420,
-        "totalLikes": 245,
-        "totalUnlocks": 1845
-      },
-      {
-        "id": 2,
-        "title": "Cyber Shinobi",
-        "type": "manga",
-        "cover": "https://images.unsplash.com/photo-1542736667-069246bdbc6d",
-        "description": "ایک مستقبل کے ٹوکیو میں، ایک سائبر سے بہتر ننجا کارپوریٹ بدعنوانی اور روگ AI سسٹمز کے خلاف لڑتا ہے۔",
-        "author": "Hiroshi Tanaka",
-        "genres": "Sci-Fi, Action, Cyberpunk",
-        "rating": 4.6,
-        "chapters_count": 18,
-        "status": "Ongoing",
-        "created_at": "2024-01-20T14:30:00Z",
-        "postedAt": "2024-01-20T14:30:00Z",
-        "latest_chapter_id": "18",
-        "totalViews": 12875,
-        "totalLikes": 198,
-        "totalUnlocks": 1567
-      }
-    ];
-
-    const sampleNovels = [  
-      {  
-        "id": 5,  
-        "title": "The Last Mage King",  
-        "type": "novel",  
-        "cover": "https://images.unsplash.com/photo-1621351183012-e2f9972dd9bf",  
-        "description": "ایک ایسی دنیا میں جہاں جادو مر رہا ہے، ایک نوجوان apprentice دریافت کرتا ہے کہ وہ قدیم جادوگر بادشاہی کا آخری وارث ہے۔",  
-        "author": "Sarah Chen",  
-        "genres": "Fantasy, Adventure, Magic",  
-        "rating": 4.8,  
-        "chapters_count": 15,  
-        "status": "Ongoing",  
-        "created_at": "2024-01-18T11:20:00Z",  
-        "postedAt": "2024-01-18T11:20:00Z",  
-        "latest_chapter_id": "15",  
-        "totalViews": 19850,
-        "totalLikes": 312,
-        "totalUnlocks": 2341  
-      },  
-      {  
-        "id": 6,  
-        "title": "Starship Renegade",  
-        "type": "novel",  
-        "cover": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06",  
-        "description": "ایک روگ spaceship کپتان اور اس کا عملہ خطرناک space sectors میں navigates کرتے ہوئے galactic authorities سے بچتا ہے۔",  
-        "author": "Marcus Ryder",  
-        "genres": "Sci-Fi, Adventure, Space",  
-        "rating": 4.5,  
-        "chapters_count": 22,  
-        "status": "Ongoing",  
-        "created_at": "2024-01-22T13:10:00Z",  
-        "postedAt": "2024-01-22T13:10:00Z",  
-        "latest_chapter_id": "22",  
-        "totalViews": 16420,
-        "totalLikes": 267,
-        "totalUnlocks": 1987  
-      }  
-    ];  
-
-    const sampleChapters = {  
-      "dragon-warrior": {  
-        "1": {  
-          "title": "سفر کا آغاز",  
-          "pages": [  
-            "https://images.unsplash.com/photo-1542736667-069246bdbc6d",  
-            "https://images.unsplash.com/photo-1578662996442-48f60103fc96",  
-            "https://images.unsplash.com/photo-1635805737707-575885ab0820"  
-          ],  
-          "content": null,  
-          "totalViews": 1542,  
-          "postedAt": "2024-01-15T10:00:00Z",  
-          "unlockTimer": 40,  
-          "backgroundImage": "https://images.unsplash.com/photo-1635805737707-575885ab0820",
-          "totalUnlocks": 245  
-        },
-        "2": {  
-          "title": "ڈریگن سے ملاقات",  
-          "pages": [  
-            "https://images.unsplash.com/photo-1578662996442-48f60103fc96",  
-            "https://images.unsplash.com/photo-1635805737707-575885ab0820"  
-          ],  
-          "content": null,  
-          "totalViews": 1245,  
-          "postedAt": "2024-01-20T10:00:00Z",  
-          "unlockTimer": 40,  
-          "backgroundImage": "https://images.unsplash.com/photo-1578662996442-48f60103fc96",
-          "totalUnlocks": 198  
-        }  
-      },  
-      "the-last-mage-king": {  
-        "1": {  
-          "title": "پیشن گوئی کا انکشاف",  
-          "pages": [],  
-          "content": "قدیم scrolls نے ایک ایسے وقت کے بارے میں بات کی جب جادو دنیا سے غائب ہو جائے گا...",  
-          "totalViews": 2156,  
-          "postedAt": "2024-01-18T11:20:00Z",  
-          "unlockTimer": 40,  
-          "backgroundImage": "https://images.unsplash.com/photo-1621351183012-e2f9972dd9bf",
-          "totalUnlocks": 312  
-        }  
-      }  
-    };  
-
     const sampleUsers = [  
-      {  
-        "_id": "user-1",  
-        "name": "Demo User",  
-        "email": "demo@rovel.com",  
-        "password": "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj89ZKVYlSKi",
-        "role": "user",  
-        "createdAt": "2024-01-01T10:00:00Z",  
-        "lastSeen": "2024-01-28T14:30:00Z",  
-        "readHistory": [  
-          {  
-            "manga": "dragon-warrior",  
-            "chapterId": "1",  
-            "viewedAt": "2024-01-28T14:25:00Z"  
-          }  
-        ],  
-        "likedGenres": ["Action", "Fantasy", "Adventure"],  
-        "unlockedChapters": [  
-          {  
-            "manga": "dragon-warrior",  
-            "chapterId": "1",  
-            "unlockedAt": "2024-01-28T14:20:00Z",  
-            "expiresAt": "2024-01-28T14:50:00Z"  
-          }  
-        ],  
-        "continueReading": {  
-          "manga": "dragon-warrior",  
-          "chapterId": "1",  
-          "lastRead": "2024-01-28T14:25:00Z"  
-        },  
-        "likes": [1, 5],  
-        "readLater": [2, 6],  
-        "viewedChapters": ["dragon-warrior-1"],  
-        "searchHistory": ["dragon", "fantasy"]  
-      },
       {
-        "_id": "admin-1",
-        "name": "Admin User",
+        "_id": "admin-auto",
+        "name": "Admin",
         "email": ADMIN_EMAIL,
-        "password": "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj89ZKVYlSKi",
+        "password": await bcrypt.hash(ADMIN_PASSWORD, 12),
         "role": "admin",
-        "createdAt": "2024-01-01T10:00:00Z",
-        "lastSeen": "2024-01-28T14:30:00Z",
+        "createdAt": new Date().toISOString(),
+        "lastSeen": new Date().toISOString(),
         "readHistory": [],
         "likedGenres": [],
         "unlockedChapters": [],
@@ -463,61 +394,9 @@ async function initializeSampleData() {
       }
     ];  
 
-    const sampleAdsConfig = {  
-      "enabled": true,  
-      "adUnits": {  
-        "BANNER": "ca-app-pub-3940256099942544/9257395921",  
-        "INTERSTITIAL": "ca-app-pub-3940256099942544/1033173712",  
-        "REWARDED": "ca-app-pub-3940256099942544/5224354917",  
-        "REWARDED_INTERSTITIAL": "ca-app-pub-3940256099942544/5354046379"  
-      },  
-      "adFrequency": {  
-        "TAB_SWITCH": 0.3,  
-        "CHAPTER_UNLOCK": 1.0,  
-        "SCROLL_THRESHOLD": 1500,  
-        "INTERSTITIAL_COOLDOWN": 120000  
-      },  
-      "unlockDuration": 40000,
-      "validityDuration": 1800000,
-      "rewardAdTimeout": 40000,  
-      "debugMode": true  
-    };  
-
-    if (mangaData.length === 0) {  
-      mangaData = sampleManga;  
-      await saveData(MANGA_FILE, mangaData);  
-    }  
-
-    if (novelsData.length === 0) {  
-      novelsData = sampleNovels;  
-      await saveData(NOVELS_FILE, novelsData);  
-    }  
-
-    if (Object.keys(chaptersData).length === 0) {  
-      chaptersData = sampleChapters;  
-      await saveData(CHAPTERS_FILE, chaptersData);  
-    }  
-
     if (usersData.length === 0) {  
       usersData = sampleUsers;  
-      await saveData(USERS_FILE, usersData);  
-    }  
-    
-if (!usersData.find(u => u.email === ADMIN_EMAIL)) {
-    usersData.push({
-        _id: "admin-auto",
-        name: "Admin",
-        email: ADMIN_EMAIL,
-        password: await bcrypt.hash(ADMIN_PASSWORD, 12),
-        role: "admin",
-        createdAt: new Date().toISOString()
-    });
-    await saveData(USERS_FILE, usersData);
-}
-
-    if (Object.keys(adsConfigData).length === 0) {  
-      adsConfigData = sampleAdsConfig;  
-      await saveData(ADS_CONFIG_FILE, adsConfigData);  
+      await saveData('users', usersData);  
     }  
 
     refreshAllPosts();
@@ -528,12 +407,9 @@ if (!usersData.find(u => u.email === ADMIN_EMAIL)) {
 }
 
 io.on('connection', (socket) => {
-  console.log(`🔌 User connected:`, socket.id);
-
   socket.on('user-authenticated', (userId) => {
     userSockets.set(userId, socket.id);
     socket.join(`user-${userId}`);
-    console.log(`👤 User ${userId} joined their room`);
   });
 
   socket.on('disconnect', () => {
@@ -543,7 +419,6 @@ io.on('connection', (socket) => {
         break;
       }
     }
-    console.log(`🔌 User disconnected:`, socket.id);
   });
 });
 
@@ -712,7 +587,7 @@ function startChapterTimer(userId, chapterId, manga) {
     unlocksData[timerKey] = [];
   }
   unlocksData[timerKey].push(unlockData);
-  saveData(UNLOCKS_FILE, unlocksData);
+  saveData('unlocks', unlocksData);
 
   if (chapterTimers.has(timerKey)) {
     clearTimeout(chapterTimers.get(timerKey));
@@ -724,7 +599,7 @@ function startChapterTimer(userId, chapterId, manga) {
 
     if (unlocksData[timerKey]) {  
       delete unlocksData[timerKey];  
-      saveData(UNLOCKS_FILE, unlocksData);  
+      saveData('unlocks', unlocksData);  
     }
 
   }, 40000);
@@ -752,7 +627,7 @@ function checkChapterTimer(userId, chapterId, manga) {
   if (unlockData && Date.now() >= unlockData.expectedUnlockTime) {
     unlockChapterForUser(userId, manga, chapterId);
     delete unlocksData[timerKey];
-    saveData(UNLOCKS_FILE, unlocksData);
+    saveData('unlocks', unlocksData);
 
     return { active: false, secondsLeft: 0, progress: 100, unlocked: true };
   }
@@ -788,8 +663,8 @@ async function unlockChapterForUser(userId, manga, chapterId) {
       (chaptersData[normalizedTitle][chapterId].totalUnlocks || 0) + 1;
   }
 
-  await saveData(USERS_FILE, usersData);
-  await saveData(CHAPTERS_FILE, chaptersData);
+  await saveData('users', usersData);
+  await saveChaptersData();
 
   const unlockLog = {
     userId,
@@ -803,7 +678,7 @@ async function unlockChapterForUser(userId, manga, chapterId) {
     unlocksData.unlockLogs = [];
   }
   unlocksData.unlockLogs.push(unlockLog);
-  await saveData(UNLOCKS_FILE, unlocksData);
+  await saveData('unlocks', unlocksData);
 
   updateAnalytics();
 
@@ -822,7 +697,7 @@ function lockChapterForUser(userId, manga, chapterId) {
   );
 
   if (user.unlockedChapters.length !== originalLength) {
-    saveData(USERS_FILE, usersData);
+    saveData('users', usersData);
     return true;
   }
 
@@ -853,7 +728,7 @@ function updateAnalytics() {
     }
   });
 
-  saveData(ANALYTICS_FILE, analyticsData);
+  saveData('analytics', analyticsData);
 }
 
 function updateUserActivity(userId, activityType, data) {
@@ -874,7 +749,7 @@ function updateUserActivity(userId, activityType, data) {
     userActivityData[userId].activities = userActivityData[userId].activities.slice(-100);
   }
 
-  saveData(USER_ACTIVITY_FILE, userActivityData);
+  saveData('user-activity', userActivityData);
 }
 
 async function calculateRanks() {
@@ -933,8 +808,7 @@ async function calculateRanks() {
       byLikes
     };  
     
-    await saveData(RANK_FILE, rankData);  
-    console.log(`📊 Ranks calculated and saved`);  
+    await saveData('rank', rankData);  
     
     return rankData;
 
@@ -955,12 +829,12 @@ function generateSlug(title) {
 async function updatePostChaptersCount(normalizedTitle) {
   let post = mangaData.find(item => generateSlug(item.title) === normalizedTitle);
   let targetData = mangaData;
-  let targetFile = MANGA_FILE;
+  let targetFile = 'manga';
 
   if (!post) {
     post = novelsData.find(item => generateSlug(item.title) === normalizedTitle);
     targetData = novelsData;
-    targetFile = NOVELS_FILE;
+    targetFile = 'novels';
   }
 
   if (post) {
@@ -1020,8 +894,7 @@ function startCleanupInterval() {
       });  
 
       if (cleanedCount > 0) {  
-        await saveData(USERS_FILE, usersData);  
-        console.log(`🧹 Cleaned up expired unlocks from ${cleanedCount} users`);  
+        await saveData('users', usersData);  
       }  
     } catch (error) {  
       console.error('Error cleaning up expired unlocks:', error);  
@@ -1060,7 +933,7 @@ app.post('/api/admin/login', async (req, res) => {
     }
 
     user.lastSeen = new Date().toISOString();
-    await saveData(USERS_FILE, usersData);
+    await saveData('users', usersData);
 
     const token = jwt.sign({ userId: user._id, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
     
@@ -1152,12 +1025,12 @@ app.put('/api/admin/content/:id', requireAdmin, async (req, res) => {
     
     if (postIndex !== -1) {
       targetData = mangaData;
-      targetFile = MANGA_FILE;
+      targetFile = 'manga';
     } else {
       postIndex = novelsData.findIndex(post => post.id === postId);
       if (postIndex !== -1) {
         targetData = novelsData;
-        targetFile = NOVELS_FILE;
+        targetFile = 'novels';
       } else {
         return res.status(404).json({ error: 'Post not found' });
       }
@@ -1214,7 +1087,7 @@ app.put('/api/admin/user/:id', requireAdmin, async (req, res) => {
     }
 
     usersData[userIndex] = { ...usersData[userIndex], ...updates };
-    await saveData(USERS_FILE, usersData);
+    await saveData('users', usersData);
 
     const { password, ...userWithoutPassword } = usersData[userIndex];
     
@@ -1270,7 +1143,7 @@ app.put('/api/admin/chapter/:id', requireAdmin, async (req, res) => {
       ...updates 
     };
 
-    await saveData(CHAPTERS_FILE, chaptersData);
+    await saveChaptersData();
 
     res.json({
       success: true,
@@ -1371,9 +1244,9 @@ app.post('/api/admin/bulk-delete', requireAdmin, async (req, res) => {
             }
           }
         }
-        await saveData(MANGA_FILE, mangaData);
-        await saveData(NOVELS_FILE, novelsData);
-        await saveData(CHAPTERS_FILE, chaptersData);
+        await saveData('manga', mangaData);
+        await saveData('novels', novelsData);
+        await saveChaptersData();
         refreshAllPosts();
         break;
 
@@ -1385,7 +1258,7 @@ app.post('/api/admin/bulk-delete', requireAdmin, async (req, res) => {
             deletedCount++;
           }
         }
-        await saveData(USERS_FILE, usersData);
+        await saveData('users', usersData);
         break;
 
       case 'chapters':
@@ -1402,7 +1275,7 @@ app.post('/api/admin/bulk-delete', requireAdmin, async (req, res) => {
             }
           }
         }
-        await saveData(CHAPTERS_FILE, chaptersData);
+        await saveChaptersData();
         break;
     }
 
@@ -1697,9 +1570,9 @@ app.post('/api/user/:id/like/:postId', authenticateToken, requireAuth, async (re
       if (post) {
         post.totalLikes = (post.totalLikes || 0) + 1;
         if (post.type === 'manga') {
-          await saveData(MANGA_FILE, mangaData);
+          await saveData('manga', mangaData);
         } else {
-          await saveData(NOVELS_FILE, novelsData);
+          await saveData('novels', novelsData);
         }
       }
     } else {  
@@ -1710,15 +1583,15 @@ app.post('/api/user/:id/like/:postId', authenticateToken, requireAuth, async (re
       if (post) {
         post.totalLikes = Math.max(0, (post.totalLikes || 1) - 1);
         if (post.type === 'manga') {
-          await saveData(MANGA_FILE, mangaData);
+          await saveData('manga', mangaData);
         } else {
-          await saveData(NOVELS_FILE, novelsData);
+          await saveData('novels', novelsData);
         }
       }
     }  
 
     user.lastSeen = new Date().toISOString();  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     updateUserActivity(id, 'like', { postId: postIdNum, liked: likeIndex === -1 });
 
@@ -1767,7 +1640,7 @@ app.post('/api/user/:id/readlater/:postId', authenticateToken, requireAuth, asyn
     }  
 
     user.lastSeen = new Date().toISOString();  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     updateUserActivity(id, 'readLater', { postId: postIdNum, added: readLaterIndex === -1 });
 
@@ -1807,7 +1680,7 @@ app.post('/api/user/:id/continue-reading', authenticateToken, requireAuth, async
     };  
 
     user.lastSeen = new Date().toISOString();  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     updateUserActivity(id, 'continueReading', { manga, chapterId });
     
@@ -1869,7 +1742,7 @@ app.post('/api/reading-track', authenticateToken, requireAuth, async (req, res) 
     };
 
     user.lastSeen = new Date().toISOString();  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     updateUserActivity(userId, 'readingProgress', { manga, chapterId, progress });
     
@@ -1897,7 +1770,7 @@ app.post('/api/chapter/:manga/:chapterId/view', authenticateToken, requireAuth, 
     if (chaptersData[normalizedTitle] && chaptersData[normalizedTitle][chapterId]) {
       chaptersData[normalizedTitle][chapterId].totalViews = 
         (chaptersData[normalizedTitle][chapterId].totalViews || 0) + 1;
-      await saveData(CHAPTERS_FILE, chaptersData);
+      await saveChaptersData();
     }
 
     const user = findUserById(userId);
@@ -1919,7 +1792,7 @@ app.post('/api/chapter/:manga/:chapterId/view', authenticateToken, requireAuth, 
       }
       
       user.lastSeen = new Date().toISOString();
-      await saveData(USERS_FILE, usersData);
+      await saveData('users', usersData);
 
       updateUserActivity(userId, 'chapterView', { manga, chapterId });
     }
@@ -1967,7 +1840,7 @@ app.post('/api/register', async (req, res) => {
     };  
 
     usersData.push(newUser);  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     updateAnalytics();
 
@@ -2013,7 +1886,7 @@ app.post('/api/login', async (req, res) => {
     }  
 
     user.lastSeen = new Date().toISOString();  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });  
 
@@ -2069,10 +1942,10 @@ app.post('/api/guest-login', async (req, res) => {
       };  
 
       usersData.push(user);  
-      await saveData(USERS_FILE, usersData);  
+      await saveData('users', usersData);  
     } else {  
       user.lastSeen = new Date().toISOString();  
-      await saveData(USERS_FILE, usersData);  
+      await saveData('users', usersData);  
     }  
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });  
@@ -2221,10 +2094,10 @@ app.post('/api/admin/content', requireAdmin, async (req, res) => {
     
     if (type === 'manga') {  
       targetData = mangaData;  
-      targetFile = MANGA_FILE;  
+      targetFile = 'manga';  
     } else if (type === 'novel') {  
       targetData = novelsData;  
-      targetFile = NOVELS_FILE;  
+      targetFile = 'novels';  
     } else {  
       return res.status(400).json({ error: 'Invalid type. Must be "manga" or "novel"' });  
     }  
@@ -2275,14 +2148,14 @@ app.delete('/api/admin/content/:id', requireAdmin, async (req, res) => {
     const mangaIndex = mangaData.findIndex(post => post.id === postId);  
     if (mangaIndex !== -1) {  
       targetData = mangaData;  
-      targetFile = MANGA_FILE;  
+      targetFile = 'manga';  
       postTitle = mangaData[mangaIndex].title;  
       mangaData.splice(mangaIndex, 1);  
     } else {  
       const novelIndex = novelsData.findIndex(post => post.id === postId);  
       if (novelIndex !== -1) {  
         targetData = novelsData;  
-        targetFile = NOVELS_FILE;  
+        targetFile = 'novels';  
         postTitle = novelsData[novelIndex].title;  
         novelsData.splice(novelIndex, 1);  
       } else {  
@@ -2298,7 +2171,7 @@ app.delete('/api/admin/content/:id', requireAdmin, async (req, res) => {
     }  
 
     await saveData(targetFile, targetData);  
-    await saveData(CHAPTERS_FILE, chaptersData);  
+    await saveChaptersData();  
     refreshAllPosts();
 
     res.json({  
@@ -2334,7 +2207,7 @@ app.delete('/api/admin/user/:id', requireAdmin, async (req, res) => {
     }  
 
     usersData.splice(userIndex, 1);  
-    await saveData(USERS_FILE, usersData);  
+    await saveData('users', usersData);  
 
     res.json({  
       success: true,  
@@ -2418,7 +2291,7 @@ app.post('/api/admin/chapter', requireAdmin, async (req, res) => {
 
     await updatePostChaptersCount(normalizedTitle);
 
-    await saveData(CHAPTERS_FILE, chaptersData);  
+    await saveChaptersData();  
 
     res.json({  
       success: true,  
@@ -2455,7 +2328,7 @@ app.delete('/api/admin/chapter/:id', requireAdmin, async (req, res) => {
       delete chaptersData[normalizedTitle];  
     }  
 
-    await saveData(CHAPTERS_FILE, chaptersData);  
+    await saveChaptersData();  
 
     res.json({  
       success: true,  
@@ -2613,8 +2486,8 @@ app.get('/api/chapter/:manga/:chapterId', authenticateToken, requireAuth, async 
     const viewKey = `${normalizedTitle}-${chapterId}`;  
     viewsData[viewKey] = (viewsData[viewKey] || 0) + 1;  
     
-    await saveData(CHAPTERS_FILE, chaptersData);  
-    await saveData(VIEWS_FILE, viewsData);  
+    await saveChaptersData();  
+    await saveData('views', viewsData);  
 
     if (req.user) {  
       const user = findUserById(req.user._id);  
@@ -2636,7 +2509,7 @@ app.get('/api/chapter/:manga/:chapterId', authenticateToken, requireAuth, async 
         }  
           
         user.lastSeen = new Date().toISOString();  
-        await saveData(USERS_FILE, usersData);  
+        await saveData('users', usersData);  
 
         updateUserActivity(req.user._id, 'chapterView', { manga, chapterId });
       }  
@@ -2701,7 +2574,7 @@ app.post('/api/search', authenticateToken, async (req, res) => {
       searchData.searches = searchData.searches.slice(-1000);
     }
     
-    await saveData(SEARCH_FILE, searchData);
+    await saveData('search', searchData);
 
     if (req.user) {  
       const user = findUserById(req.user._id);  
@@ -2718,7 +2591,7 @@ app.post('/api/search', authenticateToken, async (req, res) => {
             user.searchHistory = user.searchHistory.slice(0, 20);  
           }  
             
-          await saveData(USERS_FILE, usersData);  
+          await saveData('users', usersData);  
 
           updateUserActivity(req.user._id, 'search', { query });
         }  
