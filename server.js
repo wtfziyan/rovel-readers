@@ -2674,4 +2674,5 @@ async function startServer() {
   });
 }
 
+// ✅ Ye line zaroori hai - server start karega
 startServer().catch(console.error);
